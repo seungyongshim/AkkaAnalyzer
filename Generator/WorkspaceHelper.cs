@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Generator
 {
-    internal class Generator
+    public class Generator
     {
         private IEnumerable<ICodeGenerator> generators;
 
@@ -37,7 +37,7 @@ namespace Generator
             Console.WriteLine("Complete");
         }
 
-        private List<INamedTypeSymbol> GetSymbols(Compilation compilation, IEnumerable<MetadataReference> assemblies)
+        public static List<INamedTypeSymbol> GetSymbols(Compilation compilation, IEnumerable<MetadataReference> assemblies)
         {
             Action<INamespaceSymbol, List<INamespaceSymbol>> getNamespaces = null;
             getNamespaces = (inss, list) =>
@@ -64,7 +64,7 @@ namespace Generator
             return symbols;
         }
 
-        private IEnumerable<INamedTypeSymbol> GetTypes(INamespaceSymbol ns, IEnumerable<MetadataReference> assemblies)
+        public static IEnumerable<INamedTypeSymbol> GetTypes(INamespaceSymbol ns, IEnumerable<MetadataReference> assemblies)
         {
             foreach (var type in ns.GetTypeMembers().OfType<INamedTypeSymbol>())
             {

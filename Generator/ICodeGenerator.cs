@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Generator
 {
-    interface ICodeGenerator
+    public interface ICodeGenerator
     {
         void Initialize(List<INamedTypeSymbol> allSymbols);
 
