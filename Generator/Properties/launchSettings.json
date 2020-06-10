@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Generator": {
-      "commandName": "Project",
-      "commandLineArgs": "/source=..\\..\\..\\..\\..\\TestCode\\NewCode /compareSource=..\\..\\..\\..\\..\\TestCode\\OldCode /assemblies2=..\\..\\..\\..\\..\\TestCode\\NewCode\\NmeaParser.dll /compareAssemblies2=..\\..\\..\\..\\..\\TestCode\\OldCode\\NmeaParser.dll /format=html;md"
-    }
-  }
-}
