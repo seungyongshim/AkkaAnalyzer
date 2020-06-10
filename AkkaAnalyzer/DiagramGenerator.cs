@@ -23,6 +23,16 @@ namespace AkkaAnalyzer
             = new ConcurrentDictionary<MethodDeclarationSyntax, Dictionary<int, MethodDeclarationSyntax>>();
         #endregion
 
+        public async Task ProcessSolution()
+        {
+            
+            foreach (Project project in _solution.Projects)
+            {
+                Compilation compilation = await project.GetCompilationAsync();
+                await ProcessCompilation(compilation);
+            }
+        }
+
         #region [Constructor]
         public DiagramGenerator(string solutionPath, MSBuildWorkspace workspace)
         {
@@ -30,27 +40,70 @@ namespace AkkaAnalyzer
         }
         #endregion
 
+        List<AkkaMessage> AkkaMessages = new List<AkkaMessage>();
+
         #region [process the tree]
         private async Task ProcessCompilation(Compilation compilation)
         {
-            compilation.GetSymbolsWithName()
+            // Tell 찾기
+            var symbolTell = compilation.FindSymbol(x => x.Name.Equals("Tell"));
+            var callerTells = await SymbolFinder.FindCallersAsync(symbolTell, _solution);
 
-            var symbols = syntaxTree.GetRoot().GetAllSymbols(compilation).ToList();
+            foreach (var caller in callerTells)
+            {
+                foreach (var location in caller.Locations)
+                {
+                    Console.WriteLine($"{caller.CallingSymbol.ContainingType}");
 
-            var list = symbols
-                .Where(x => x.Name.Equals("Tell"))
-                .FirstOrDefault();
+                    if ("Mirero.MLS.Batch.ImageLoader.Actor.TransferActor".Equals(caller.CallingSymbol.ContainingType.ToString()))
+                    {
+                        Console.WriteLine("Here");
+                    }
 
-            var tellcallers = await SymbolFinder.FindCallersAsync(list, _solution);
+                    if (location.IsInSource)
+                    {
+                        var node = location.SourceTree?.GetRoot()
+                            .FindToken(location.SourceSpan.Start).GetNextToken().Parent;
 
-            foreach (var tellcaller in tellcallers)
+                        if (node == null)
+                        {
+                            Console.WriteLine("Err");
+                        }
+                        else
+
+                        if(node.GetAllSymbols(compilation).First().Name.Equals(".ctor"))
+                        {
+                            var msg = node.GetAllSymbols(compilation).Skip(1).First();
+
+                            Console.WriteLine($"- {msg.OriginalDefinition} : {msg.Name}: {msg.Kind} ");
+                        }
+                        else foreach (var nodeSymbols in node.GetAllSymbols(compilation))
+                        {
+                            switch (nodeSymbols)
+                            {
+                                case ILocalSymbol x:
+                                    Console.WriteLine($"- {x.Type} : {nodeSymbols.Name}: {nodeSymbols.Kind}"); 
+                                    break;
+                                default:
+                                    Console.WriteLine($"- {nodeSymbols.OriginalDefinition} : {nodeSymbols.Name}: {nodeSymbols.Kind}");
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Ask 찾기
+            var symbolAsk = compilation.FindSymbol(x => x.Name.Equals("Ask"));
+            var callerAsks = await SymbolFinder.FindCallersAsync(symbolAsk, _solution);
+
+            foreach (var item in callerAsks)
             {
 
             }
 
-            var trees = compilation.SyntaxTrees;
 
-            foreach (var tree in trees)
+            foreach (var tree in compilation.SyntaxTrees)
             {
                 var root = await tree.GetRootAsync();
                 var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
@@ -66,6 +119,8 @@ namespace AkkaAnalyzer
                 }
             }
         }
+
+
 
         private async Task ProcessClass(ClassDeclarationSyntax @class, Compilation compilation, SyntaxTree syntaxTree)
         {
@@ -297,15 +352,6 @@ namespace AkkaAnalyzer
             string result = returningInfo + Environment.NewLine;
 
             return result;
-        }
-
-        public async Task ProcessSolution()
-        {
-            foreach (Project project in _solution.Projects)
-            {
-                Compilation compilation = await project.GetCompilationAsync();
-                await ProcessCompilation(compilation);
-            }
         }
 
         #endregion

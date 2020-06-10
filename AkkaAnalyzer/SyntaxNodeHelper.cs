@@ -23,6 +23,7 @@ namespace AkkaAnalyzer
             {
                 switch (node.Kind())
                 {
+                    
                     case SyntaxKind.ExpressionStatement:
                     case SyntaxKind.InvocationExpression:
                         break;

@@ -20,11 +20,11 @@ namespace AkkaAnalyzer
             DirectoryInfo directoryInfo = new DirectoryInfo(@"C:\Workspace\mls-application");
             var slnFiles = directoryInfo.GetFiles("*.sln", SearchOption.AllDirectories);
 
-            foreach((var slnFile, int i) in slnFiles.Select((x, i) =>(x, i + 1)))
+            foreach ((var slnFile, int i) in slnFiles.Select((x, i) => (x, i + 1)))
             {
                 Console.WriteLine($"# {i}. {Path.GetFileNameWithoutExtension(slnFile.FullName)}");
                 using var msWorkspace = MSBuildWorkspace.Create();
-
+                
                 // https://github.com/jpollard-cs/Diagrams/blob/master/Diagrams/Program.cs
                 var diagramGenerator = new DiagramGenerator(slnFile.FullName, msWorkspace);
                 await diagramGenerator.ProcessSolution();
