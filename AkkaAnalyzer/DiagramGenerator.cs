@@ -38,70 +38,20 @@ namespace AkkaAnalyzer
         {
             _solution = workspace.OpenSolutionAsync(solutionPath).Result;
         }
+
+        public DiagramGenerator(string solutionPath, MSBuildWorkspace workspace, Dictionary<string, AkkaMessage> akkaMessage) : this(solutionPath, workspace)
+        {
+            _akkaMessage = akkaMessage;
+        }
         #endregion
 
-        List<AkkaMessage> AkkaMessages = new List<AkkaMessage>();
+        private Dictionary<string, AkkaMessage> _akkaMessage;
 
         #region [process the tree]
         private async Task ProcessCompilation(Compilation compilation)
         {
             // Tell 찾기
-            var symbolTell = compilation.FindSymbol(x => x.Name.Equals("Tell"));
-            var callerTells = await SymbolFinder.FindCallersAsync(symbolTell, _solution);
-
-            foreach (var caller in callerTells)
-            {
-                foreach (var location in caller.Locations)
-                {
-                    Console.WriteLine($"{caller.CallingSymbol.ContainingType}");
-
-                    if ("Mirero.MLS.Batch.ImageLoader.Actor.TransferActor".Equals(caller.CallingSymbol.ContainingType.ToString()))
-                    {
-                        Console.WriteLine("Here");
-                    }
-
-                    if (location.IsInSource)
-                    {
-                        var node = location.SourceTree?.GetRoot()
-                            .FindToken(location.SourceSpan.Start).GetNextToken().Parent;
-
-                        if (node == null)
-                        {
-                            Console.WriteLine("Err");
-                        }
-                        else
-
-                        if(node.GetAllSymbols(compilation).First().Name.Equals(".ctor"))
-                        {
-                            var msg = node.GetAllSymbols(compilation).Skip(1).First();
-
-                            Console.WriteLine($"- {msg.OriginalDefinition} : {msg.Name}: {msg.Kind} ");
-                        }
-                        else foreach (var nodeSymbols in node.GetAllSymbols(compilation))
-                        {
-                            switch (nodeSymbols)
-                            {
-                                case ILocalSymbol x:
-                                    Console.WriteLine($"- {x.Type} : {nodeSymbols.Name}: {nodeSymbols.Kind}"); 
-                                    break;
-                                default:
-                                    Console.WriteLine($"- {nodeSymbols.OriginalDefinition} : {nodeSymbols.Name}: {nodeSymbols.Kind}");
-                                    break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Ask 찾기
-            var symbolAsk = compilation.FindSymbol(x => x.Name.Equals("Ask"));
-            var callerAsks = await SymbolFinder.FindCallersAsync(symbolAsk, _solution);
-
-            foreach (var item in callerAsks)
-            {
-
-            }
-
+            await FindTell(compilation);
 
             foreach (var tree in compilation.SyntaxTrees)
             {
@@ -120,7 +70,75 @@ namespace AkkaAnalyzer
             }
         }
 
+        private async Task FindTell(Compilation compilation)
+        {
+            var symbolTell = compilation.FindSymbol(x => x.Name.Equals("Tell"));
 
+            if (symbolTell is null) return;
+
+            var callerTells = await SymbolFinder.FindCallersAsync(symbolTell, _solution);
+
+            foreach (var caller in callerTells)
+            {
+                foreach (var location in caller.Locations)
+                {
+                    Console.WriteLine($"{caller.CallingSymbol.ContainingType}");
+
+                    if (location.IsInSource)
+                    {
+                        var node = location.SourceTree.GetRoot()
+                                                      .FindToken(location.SourceSpan.Start)
+                                                      .GetNextToken().Parent;
+                        try
+                        {
+                            var argumentsSymbols = node.GetAllSymbols(compilation)
+                                                       .ToArray();
+
+                            if (argumentsSymbols.First().Name
+                                                .Equals(".ctor"))
+                            {
+                                var msg = argumentsSymbols.Skip(1)
+                                                          .First();
+
+                                AkkaMessageAdd($"{caller.CallingSymbol.ContainingType}", $"{msg.OriginalDefinition}");
+                            }
+                            else foreach (var nodeSymbols in argumentsSymbols)
+                            {
+                                switch (nodeSymbols)
+                                {
+                                    case ILocalSymbol x:
+                                        AkkaMessageAdd($"{caller.CallingSymbol.ContainingType}", $"{x.Type}");
+                                        break;
+                                    default:
+                                        AkkaMessageAdd($"{caller.CallingSymbol.ContainingType}", $"{nodeSymbols.OriginalDefinition}");
+                                        break;
+                                }
+                            }
+                        }
+                        catch
+                        {
+
+                        }
+                    }
+                }
+            }
+        }
+
+        private void AkkaMessageAdd(string caller, string msgName)
+        {
+            if (_akkaMessage.TryGetValue(msgName, out var akkaMessage))
+            {
+                akkaMessage.Senders.Add(caller);
+            }
+            else
+            {
+                _akkaMessage.Add(msgName, new AkkaMessage
+                {
+                    Name = msgName,
+                    Senders = new List<string> { caller }
+                });
+            }
+        }
 
         private async Task ProcessClass(ClassDeclarationSyntax @class, Compilation compilation, SyntaxTree syntaxTree)
         {
@@ -145,15 +163,8 @@ namespace AkkaAnalyzer
                 {
                     Console.WriteLine($"- {symbol.ToDisplayString()}");
                 }
-                //var model = compilation.GetSemanticModel(syntaxTree);
-                //var methodSymbol = model.GetDeclaredSymbol(method);
-                //var methodSymbol = model.GetDeclaredSymbol(item.Parent.Parent.Parent);
-                //var array = methodSymbol.DeclaringSyntaxReferences.ToArray();
             }
-            
             // https://stackoverflow.com/questions/55118805/extract-called-method-information-using-roslyn
-
-
         }
 
         private async Task<List<MethodDeclarationSyntax>> GetCallingMethodsAsync(ISymbol methodSymbol, MethodDeclarationSyntax method)

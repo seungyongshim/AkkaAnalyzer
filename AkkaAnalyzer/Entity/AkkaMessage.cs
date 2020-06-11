@@ -1,12 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace AkkaAnalyzer
 {
-    class AkkaMessage
+    class AkkaMessage 
     {
+        public string Name { get; set; }
+
+        public List<string> Senders { get; set; }
+
+        public List<string> Receivers { get; set; }
+
+        public override int GetHashCode() => System.HashCode.Combine(Name);
     }
 }
