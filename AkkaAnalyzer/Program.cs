@@ -30,6 +30,8 @@ namespace AkkaAnalyzer
 
             Console.WriteLine("Akka Messages");
             Console.WriteLine(akkaAnalyzerReporter.ReportMessages());
+
+            File.WriteAllText("Messages.md", akkaAnalyzerReporter.ReportMessages());
         }
     }
 }

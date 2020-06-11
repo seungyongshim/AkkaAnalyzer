@@ -8,6 +8,13 @@ namespace AkkaAnalyzer
 {
     public static class SyntaxNodeHelper
     {
+        public static ISymbol GetSymbols(this SyntaxNode root, Compilation compilation)
+        {
+            var model = compilation.GetSemanticModel(root.SyntaxTree);
+            ISymbol symbol = model.GetSymbolInfo(root).Symbol;
+            return symbol;
+        }
+
         public static IEnumerable<ISymbol> GetAllSymbols(this SyntaxNode root, Compilation compilation)
         {
             var noDuplicates = new HashSet<ISymbol>();
@@ -40,6 +47,7 @@ namespace AkkaAnalyzer
             return method.DescendantTokens()
                          .Where(x => x.IsKind(SyntaxKind.IdentifierToken))
                          .Where(x => "Receive".Equals(x.ValueText));
+
         }
 
         public static bool IsReceiveActor(this ClassDeclarationSyntax @class)

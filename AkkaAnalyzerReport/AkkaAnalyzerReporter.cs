@@ -12,7 +12,7 @@ namespace AkkaAnalyzerReport
         {
             StringBuilder sb = new StringBuilder();
 
-            foreach ((var msg, int i) in _akkaMessages.Values.Select((x, i) => (x, i)))
+            foreach ((var msg, var i) in _akkaMessages.Values.Select((x, i) => (x, i)))
             {
                 sb.AppendLine($"## {msg.Name}");
 
@@ -21,9 +21,9 @@ namespace AkkaAnalyzerReport
                     sb.AppendLine($"- Sender");
                 }
 
-                foreach (var caller in msg.Senders.Distinct())
+                foreach (var item in msg.Senders.Distinct())
                 {
-                    sb.AppendLine($"  - {caller} ({msg.Senders.Where(x => x.Equals(caller)).Count()})");
+                    sb.AppendLine($"  - {item} ({msg.Senders.Where(x => x.Equals(item)).Count()})");
                 }
 
                 if (msg.Receivers.Count() > 0)

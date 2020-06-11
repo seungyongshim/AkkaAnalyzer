@@ -14,7 +14,7 @@ namespace AkkaAnalyzerReport
 
             if (!string.IsNullOrEmpty(receiver))
             {
-                Senders.Add(receiver);
+                Receivers.Add(receiver);
             }
         }
 
