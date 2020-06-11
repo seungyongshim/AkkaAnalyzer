@@ -1,4 +1,4 @@
-﻿using AkkaAnalyzerReport;
+﻿using AkkaAnalyzer.Report;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
@@ -90,25 +90,22 @@ namespace AkkaAnalyzer
                             var argumentsSymbols = node.GetAllSymbols(compilation)
                                                        .ToArray();
 
-                            if (argumentsSymbols.First().Name
-                                                .Equals(".ctor"))
+                            
+                            switch (argumentsSymbols.First())
                             {
-                                var msg = argumentsSymbols.Skip(1)
-                                                          .First();
-
-                                _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{msg.OriginalDefinition}");
-                            }
-                            else foreach (var nodeSymbols in argumentsSymbols)
-                                {
-                                    switch (nodeSymbols)
-                                    {
-                                        case ILocalSymbol x:
-                                            _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{x.Type}");
-                                            break;
-                                        default:
-                                            _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{nodeSymbols.OriginalDefinition}");
-                                            break;
-                                    }
+                                case ISymbol x when x.Name.Equals(".ctor"):
+                                    var msg = argumentsSymbols.Skip(1).First();
+                                    _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{msg.OriginalDefinition}");
+                                    break;
+                                case ILocalSymbol x:
+                                    _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{x.Type}");
+                                    break;
+                                case IMethodSymbol x:
+                                    _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{x.ReturnType}");
+                                    break;
+                                case ISymbol x:
+                                    _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{x.OriginalDefinition}");
+                                    break;
                                 }
                         }
                         catch

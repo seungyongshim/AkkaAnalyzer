@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 
-namespace AkkaAnalyzerReport
+namespace AkkaAnalyzer.Report.Entity
 {
-    class AkkaMessage
+    class MessageInfo
     {
-        public AkkaMessage(string name, string sender, string receiver)
+        public MessageInfo(string name, string sender, string receiver)
         {
             Name = name;
             if (!string.IsNullOrEmpty(sender))

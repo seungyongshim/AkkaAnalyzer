@@ -1,4 +1,4 @@
-﻿using AkkaAnalyzerReport;
+﻿using AkkaAnalyzer.Report;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis.MSBuild;
 using System;
@@ -32,6 +32,8 @@ namespace AkkaAnalyzer
             Console.WriteLine(akkaAnalyzerReporter.ReportMessages());
 
             File.WriteAllText("Messages.md", akkaAnalyzerReporter.ReportMessages());
+            File.WriteAllText("Actors.md", akkaAnalyzerReporter.ReportActors());
+            
         }
     }
 }
