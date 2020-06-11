@@ -1,13 +1,8 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.FindSymbols;
-using Microsoft.CodeAnalysis.MSBuild;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AkkaAnalyzer
 {
@@ -23,7 +18,7 @@ namespace AkkaAnalyzer
             {
                 switch (node.Kind())
                 {
-                    
+
                     case SyntaxKind.ExpressionStatement:
                     case SyntaxKind.InvocationExpression:
                         break;
@@ -40,31 +35,11 @@ namespace AkkaAnalyzer
             }
         }
 
-        public static IEnumerable<SyntaxToken> HasRecieveCallee(this MethodDeclarationSyntax method)
+        public static IEnumerable<SyntaxToken> HasRecieveCallee(this BaseMethodDeclarationSyntax method)
         {
             return method.DescendantTokens()
                          .Where(x => x.IsKind(SyntaxKind.IdentifierToken))
-                         .Where(x => "Receive".Equals(x.ValueText))
-                         .SelectMany(x => x.Parent.ChildNodes())
-                         .SelectMany(x => x.DescendantTokens())
-                         .Where(x => x.IsKind(SyntaxKind.IdentifierToken))
-                         .Where(x =>
-                         {
-                             // 이중점 처리
-                             if (x.Parent.Parent.IsKind(SyntaxKind.QualifiedName))
-                             { 
-                                 var grandParent = x.Parent.Parent as QualifiedNameSyntax;
-                                 if (grandParent.Left.ToString().Equals(x.ValueText))
-                                 {
-                                     return false;
-                                 }
-                                 else return true;
-
-                             }
-                            else return true;
-                         });
-
-                            
+                         .Where(x => "Receive".Equals(x.ValueText));
         }
 
         public static bool IsReceiveActor(this ClassDeclarationSyntax @class)

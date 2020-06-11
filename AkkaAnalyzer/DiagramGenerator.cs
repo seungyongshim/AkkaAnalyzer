@@ -1,19 +1,19 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using AkkaAnalyzerReport;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.MSBuild;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AkkaAnalyzer
 {
-    class DiagramGenerator
+    internal class DiagramGenerator
     {
-        #region [Fields & Properties]
         private readonly Solution _solution;
 
         private readonly ConcurrentDictionary<MethodDeclarationSyntax, List<MethodDeclarationSyntax>> _methodDeclarationSyntaxes
@@ -21,11 +21,10 @@ namespace AkkaAnalyzer
 
         private readonly ConcurrentDictionary<MethodDeclarationSyntax, Dictionary<int, MethodDeclarationSyntax>> _methodOrder
             = new ConcurrentDictionary<MethodDeclarationSyntax, Dictionary<int, MethodDeclarationSyntax>>();
-        #endregion
 
         public async Task ProcessSolution()
         {
-            
+
             foreach (Project project in _solution.Projects)
             {
                 Compilation compilation = await project.GetCompilationAsync();
@@ -33,21 +32,19 @@ namespace AkkaAnalyzer
             }
         }
 
-        #region [Constructor]
         public DiagramGenerator(string solutionPath, MSBuildWorkspace workspace)
         {
             _solution = workspace.OpenSolutionAsync(solutionPath).Result;
+
         }
 
-        public DiagramGenerator(string solutionPath, MSBuildWorkspace workspace, Dictionary<string, AkkaMessage> akkaMessage) : this(solutionPath, workspace)
+        public DiagramGenerator(string solutionPath, MSBuildWorkspace workspace, AkkaAnalyzerReporter akkaAnalyzerReporter) : this(solutionPath, workspace)
         {
-            _akkaMessage = akkaMessage;
+            _akkaAnalyzerReporter = akkaAnalyzerReporter;
         }
-        #endregion
 
-        private Dictionary<string, AkkaMessage> _akkaMessage;
+        public AkkaAnalyzerReporter _akkaAnalyzerReporter { get; }
 
-        #region [process the tree]
         private async Task ProcessCompilation(Compilation compilation)
         {
             // Tell 찾기
@@ -63,6 +60,7 @@ namespace AkkaAnalyzer
                     if (@class.IsReceiveActor())
                     {
                         Console.WriteLine($"## {@class.GetFullName()}");
+
                         await ProcessClass(@class, compilation, treeCopy);
                         Console.WriteLine();
                     }
@@ -82,8 +80,6 @@ namespace AkkaAnalyzer
             {
                 foreach (var location in caller.Locations)
                 {
-                    Console.WriteLine($"{caller.CallingSymbol.ContainingType}");
-
                     if (location.IsInSource)
                     {
                         var node = location.SourceTree.GetRoot()
@@ -100,20 +96,20 @@ namespace AkkaAnalyzer
                                 var msg = argumentsSymbols.Skip(1)
                                                           .First();
 
-                                AkkaMessageAdd($"{caller.CallingSymbol.ContainingType}", $"{msg.OriginalDefinition}");
+                                _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{msg.OriginalDefinition}");
                             }
                             else foreach (var nodeSymbols in argumentsSymbols)
-                            {
-                                switch (nodeSymbols)
                                 {
-                                    case ILocalSymbol x:
-                                        AkkaMessageAdd($"{caller.CallingSymbol.ContainingType}", $"{x.Type}");
-                                        break;
-                                    default:
-                                        AkkaMessageAdd($"{caller.CallingSymbol.ContainingType}", $"{nodeSymbols.OriginalDefinition}");
-                                        break;
+                                    switch (nodeSymbols)
+                                    {
+                                        case ILocalSymbol x:
+                                            _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{x.Type}");
+                                            break;
+                                        default:
+                                            _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{nodeSymbols.OriginalDefinition}");
+                                            break;
+                                    }
                                 }
-                            }
                         }
                         catch
                         {
@@ -124,271 +120,28 @@ namespace AkkaAnalyzer
             }
         }
 
-        private void AkkaMessageAdd(string caller, string msgName)
-        {
-            if (_akkaMessage.TryGetValue(msgName, out var akkaMessage))
-            {
-                akkaMessage.Senders.Add(caller);
-            }
-            else
-            {
-                _akkaMessage.Add(msgName, new AkkaMessage
-                {
-                    Name = msgName,
-                    Senders = new List<string> { caller }
-                });
-            }
-        }
+
 
         private async Task ProcessClass(ClassDeclarationSyntax @class, Compilation compilation, SyntaxTree syntaxTree)
         {
-            var methods = @class.DescendantNodes().OfType<MethodDeclarationSyntax>();
+            var methods = @class.DescendantNodes().OfType<BaseMethodDeclarationSyntax>();
 
             foreach (var method in methods)
             {
-                await ProcessMethod(method, compilation, syntaxTree);
-            }
-        }
-
-        private async Task ProcessMethod(MethodDeclarationSyntax method, Compilation compilation, SyntaxTree syntaxTree)
-        {
-            foreach (var item in method.HasRecieveCallee())
-            {
-                var symbols = item.Parent.GetAllSymbols(compilation)
-                    .Where(x => x.Name.Equals(item.ValueText))
-                    .ToList();
-                    
-
-                foreach (var symbol in symbols)
+                foreach (var item in method.HasRecieveCallee())
                 {
-                    Console.WriteLine($"- {symbol.ToDisplayString()}");
+                    var symbols = item.Parent.GetAllSymbols(compilation)
+                        .Where(x => x.Name.Equals(item.ValueText))
+                        .OfType<IMethodSymbol>()
+                        .ToList();
+
+                    foreach (var methodsymbol in symbols)
+                    {
+                        Console.WriteLine($"- {methodsymbol.TypeArguments[0].ToDisplayString()}");
+                        _akkaAnalyzerReporter.AddMessageReceiver(@class.GetFullName(), methodsymbol.TypeArguments[0].ToDisplayString());
+                    }
                 }
             }
-            // https://stackoverflow.com/questions/55118805/extract-called-method-information-using-roslyn
-        }
-
-        private async Task<List<MethodDeclarationSyntax>> GetCallingMethodsAsync(ISymbol methodSymbol, MethodDeclarationSyntax method)
-        {
-            var references = new List<MethodDeclarationSyntax>();
-
-            var referencingSymbols = await SymbolFinder.FindCallersAsync(methodSymbol, _solution);
-            var referencingSymbolsList = referencingSymbols as IList<SymbolCallerInfo> ?? referencingSymbols.ToList();
-
-            if (!referencingSymbolsList.Any(s => s.Locations.Any()))
-            {
-                return references;
-            }
-
-            foreach (var referenceSymbol in referencingSymbolsList)
-            {
-                foreach (var location in referenceSymbol.Locations)
-                {
-                    var position = location.SourceSpan.Start;
-                    var root = await location.SourceTree.GetRootAsync();
-                    var nodes = root.FindToken(position).Parent.AncestorsAndSelf().OfType<MethodDeclarationSyntax>();
-
-                    var methodDeclarationSyntaxes = nodes as MethodDeclarationSyntax[] ?? nodes.ToArray();
-                    references.AddRange(methodDeclarationSyntaxes);
-                }
-            }
-
-            return references;
-        }
-
-        public void GenerateDiagramFromRoot()
-        {
-            MethodDeclarationSyntax root = null;
-            foreach (var key in _methodDeclarationSyntaxes.Keys)
-            {
-                if (!_methodDeclarationSyntaxes.Values.Any(value => value.Contains(key)))
-                {
-                    // then we have a method that's not being called by anything
-                    root = key;
-                    break;
-                }
-            }
-
-            if (root != null)
-            {
-                PrintMethodInfo(root);
-            }
-        }
-
-        public void PrintMethodInfo(MethodDeclarationSyntax callingMethod)
-        {
-            if (!_methodDeclarationSyntaxes.ContainsKey(callingMethod))
-            {
-                return;
-            }
-
-            var calledMethods = _methodOrder[callingMethod];
-            var orderedCalledMethods = calledMethods.OrderBy(kvp => kvp.Key);
-
-            foreach (var kvp in orderedCalledMethods)
-            {
-                var calledMethod = kvp.Value;
-                ClassDeclarationSyntax callingClass = null;
-                ClassDeclarationSyntax calledClass = null;
-
-                if (!SyntaxNodeHelper.TryGetParentSyntax(callingMethod, out callingClass) ||
-                    !SyntaxNodeHelper.TryGetParentSyntax(calledMethod, out calledClass))
-                {
-                    continue;
-                }
-
-                PrintOutgoingCallInfo(
-                          calledClass
-                        , callingClass
-                        , callingMethod
-                        , calledMethod
-                    );
-
-                if (callingMethod != calledMethod)
-                {
-                    PrintMethodInfo(calledMethod);
-                }
-
-                PrintReturnCallInfo(
-                          calledClass
-                        , callingClass
-                        , callingMethod
-                        , calledMethod
-                    );
-            }
-        }
-
-        private static void PrintOutgoingCallInfo(
-              ClassDeclarationSyntax classBeingCalled
-            , ClassDeclarationSyntax callingClass
-            , MethodDeclarationSyntax callingMethod
-            , MethodDeclarationSyntax calledMethod
-            , bool includeCalledMethodArguments = false)
-        {
-            var callingMethodName = callingMethod.Identifier.ToFullString();
-            var calledMethodReturnType = calledMethod.ReturnType.ToFullString();
-            var calledMethodName = calledMethod.Identifier.ToFullString();
-            var calledMethodArguments = calledMethod.ParameterList.ToFullString();
-            var calledMethodModifiers = calledMethod.Modifiers.ToString();
-            var calledMethodConstraints = calledMethod.ConstraintClauses.ToFullString();
-            var actedUpon = classBeingCalled.Identifier.ValueText;
-            var actor = callingClass.Identifier.ValueText;
-            var calledMethodTypeParameters = calledMethod.TypeParameterList != null
-                ? calledMethod.TypeParameterList.ToFullString()
-                : String.Empty;
-            var callingMethodTypeParameters = callingMethod.TypeParameterList != null
-                ? callingMethod.TypeParameterList.ToFullString()
-                : String.Empty;
-
-            var callInfo = callingMethodName + callingMethodTypeParameters + " => " + calledMethodModifiers + " " + calledMethodReturnType + calledMethodName + calledMethodTypeParameters;
-
-            if (includeCalledMethodArguments)
-            {
-                callInfo += calledMethodArguments;
-            }
-
-            callInfo += calledMethodConstraints;
-
-            string info
-                = BuildOutgoingCallInfo(actor
-                                        , actedUpon
-                                        , callInfo);
-
-            Console.Write(info);
-        }
-
-        private static void PrintReturnCallInfo(
-              ClassDeclarationSyntax classBeingCalled
-            , ClassDeclarationSyntax callingClass
-            , MethodDeclarationSyntax callingMethod
-            , MethodDeclarationSyntax calledMethod)
-        {
-
-            var actedUpon = classBeingCalled.Identifier.ValueText;
-            var actor = callingClass.Identifier.ValueText;
-            var callerName = callingMethod.Identifier.ToFullString();
-            var callingMethodTypeParameters = callingMethod.TypeParameterList != null
-                ? callingMethod.TypeParameterList.ToFullString()
-                : String.Empty;
-            var calledMethodTypeParameters = calledMethod.TypeParameterList != null
-                ? calledMethod.TypeParameterList.ToFullString()
-                : String.Empty;
-
-            var calledMethodInfo = calledMethod.Identifier.ToFullString() + calledMethodTypeParameters;
-
-            callerName += callingMethodTypeParameters;
-
-            var returnCallInfo = calledMethod.ReturnType.ToString();
-
-            var returnMethodParameters = calledMethod.ParameterList.Parameters;
-            foreach (var parameter in returnMethodParameters)
-            {
-                if (parameter.Modifiers.Any(m => m.Text == "out"))
-                {
-                    returnCallInfo += "," + parameter.ToFullString();
-                }
-            }
-
-            string info = BuildReturnCallInfo(
-                  actor
-                , actedUpon
-                , calledMethodInfo
-                , callerName
-                , returnCallInfo);
-
-            Console.Write(info);
-        }
-
-        private static string BuildOutgoingCallInfo(string actor, string actedUpon, string callInfo)
-        {
-            const string calls = "->";
-            const string descriptionSeparator = ": ";
-
-            string callingInfo = actor + calls + actedUpon + descriptionSeparator + callInfo;
-
-            callingInfo = callingInfo.RemoveNewLines(true);
-
-            string result = callingInfo + Environment.NewLine;
-
-            return result;
-        }
-
-        private static string BuildReturnCallInfo(string actor, string actedUpon, string calledMethodInfo, string callerName, string returnInfo)
-        {
-            const string returns = "-->";
-            const string descriptionSeparator = ": ";
-
-            string returningInfo = actedUpon + returns + actor + descriptionSeparator + calledMethodInfo + " returns " + returnInfo + " to " + callerName;
-            returningInfo = returningInfo.RemoveNewLines(true);
-
-            string result = returningInfo + Environment.NewLine;
-
-            return result;
-        }
-
-        #endregion
-    }
-
-    public static class StringEx
-    {
-        public static string RemoveNewLines(this string stringWithNewLines, bool cleanWhitespace = false)
-        {
-            string stringWithoutNewLines = null;
-            List<char> splitElementList = Environment.NewLine.ToCharArray().ToList();
-
-            if (cleanWhitespace)
-            {
-                splitElementList.AddRange(" ".ToCharArray().ToList());
-            }
-
-            char[] splitElements = splitElementList.ToArray();
-
-            var stringElements = stringWithNewLines.Split(splitElements, StringSplitOptions.RemoveEmptyEntries);
-            if (stringElements.Any())
-            {
-                stringWithoutNewLines = stringElements.Aggregate(stringWithoutNewLines, (current, element) => current + (current == null ? element : " " + element));
-            }
-
-            return stringWithoutNewLines ?? stringWithNewLines;
         }
     }
 }
