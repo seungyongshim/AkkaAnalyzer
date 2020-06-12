@@ -69,7 +69,7 @@ namespace AkkaAnalyzer.Report
 
                 foreach (var item in msg.Senders.Distinct())
                 {
-                    sb.AppendLine($"  - [{item}](./actors.md#{item}) ({msg.Senders.Where(x => x.Equals(item)).Count()})");
+                    sb.AppendLine($"  - [{item}](../../Archtecture/Actors.md#{item.Replace(".", string.Empty).ToLower()}) ({msg.Senders.Where(x => x.Equals(item)).Count()})");
                 }
 
                 if (msg.Receivers.Count() > 0)
@@ -79,7 +79,7 @@ namespace AkkaAnalyzer.Report
 
                 foreach (var item in msg.Receivers.Distinct())
                 {
-                    sb.AppendLine($"  - [{item}](./actors.md#{item}) ({msg.Receivers.Where(x => x.Equals(item)).Count()})");
+                    sb.AppendLine($"  - [{item}](../../Archtecture/Actors.md#{item.Replace(".", string.Empty).ToLower()}) ({msg.Receivers.Where(x => x.Equals(item)).Count()})");
                 }
 
                 sb.AppendLine();
@@ -103,7 +103,7 @@ namespace AkkaAnalyzer.Report
 
                 foreach (var item in msg.SendMessages.Distinct())
                 {
-                    sb.AppendLine($"  - [{item}](./messages.md#{item}) ({msg.SendMessages.Where(x => x.Equals(item)).Count()})");
+                    sb.AppendLine($"  - [{item}](../../Archtecture/Messages.md#{item.Replace(".", string.Empty).ToLower()}) ({msg.SendMessages.Where(x => x.Equals(item)).Count()})");
                 }
 
                 if (msg.ReceiveMessages.Count() > 0)
@@ -113,7 +113,124 @@ namespace AkkaAnalyzer.Report
 
                 foreach (var item in msg.ReceiveMessages.Distinct())
                 {
-                    sb.AppendLine($"  - [{item}](./messages.md#{item}) ({msg.ReceiveMessages.Where(x => x.Equals(item)).Count()})");
+                    sb.AppendLine($"  - [{item}](../../Archtecture/Messages.md#{item.Replace(".", string.Empty).ToLower()}) ({msg.ReceiveMessages.Where(x => x.Equals(item)).Count()})");
+                }
+
+                sb.AppendLine();
+            }
+
+            return sb.ToString();
+        }
+
+        public string ReportArchtecture()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            sb.AppendLine($"# 1. Messages");
+
+            foreach ((var msg, var i) in _messageInfos.Values.Select((x, i) => (x, i)))
+            {
+                sb.AppendLine($"## {msg.Name}");
+
+                sb.AppendLine("```mermaid");
+                sb.AppendLine("graph LR");
+                sb.AppendLine("linkStyle default interpolate basis");
+
+                StringBuilder clickbuilder = new StringBuilder();
+
+                foreach ((var item, var itemIdx) in msg.Senders
+                    .Select(x => x.Split('.').Last())
+                    .Distinct().Select((x, i) => (x, i)))
+                {
+                    sb.AppendLine($"  A{itemIdx}([{item}]) --- B[{msg.Name.Split('.').Last()}]");
+                    clickbuilder.AppendLine($"click A{itemIdx} \"#{item.Replace(".", string.Empty).ToLower()}\"");
+
+                }
+
+                foreach ((var item, var itemIdx) in msg.Receivers
+                    .Select(x => x.Split('.').Last())
+                    .Distinct().Select((x, i) => (x, i)))
+                {
+                    sb.AppendLine($"  B[{msg.Name.Split('.').Last()}] --> C{itemIdx}([{item}])");
+                    clickbuilder.AppendLine($"click C{itemIdx} \"#{item.Replace(".", string.Empty).ToLower()}\"");
+                }
+
+                sb.AppendLine(clickbuilder.ToString());
+
+                sb.AppendLine("```");
+
+
+                if (msg.Senders.Any())
+                {
+                    sb.AppendLine($"- Sender");
+                }
+
+                foreach (var item in msg.Senders.Distinct())
+                {
+                    sb.AppendLine($"  - [{item}](#{item.Replace(".", string.Empty).ToLower()}) ({msg.Senders.Where(x => x.Equals(item)).Count()})");
+                }
+
+                if (msg.Receivers.Any())
+                {
+                    sb.AppendLine($"- Receiver");
+                }
+
+                foreach (var item in msg.Receivers.Distinct())
+                {
+                    sb.AppendLine($"  - [{item}](#{item.Replace(".", string.Empty).ToLower()}) ({msg.Receivers.Where(x => x.Equals(item)).Count()})");
+                }
+
+                sb.AppendLine();
+            }
+
+
+            sb.AppendLine($"# 2. Actors");
+
+            foreach ((var msg, var i) in _actorInfos.Values.Select((x, i) => (x, i)))
+            {
+                sb.AppendLine($"## {msg.Name}");
+
+                sb.AppendLine("```mermaid");
+                sb.AppendLine("graph LR");
+                sb.AppendLine("linkStyle default interpolate basis");
+
+                StringBuilder clickbuilder = new StringBuilder();
+
+                foreach ((var item, var itemIdx) in msg.ReceiveMessages.Distinct().Select((x, i) => (x, i)))
+                {
+                    sb.AppendLine($"  A{itemIdx}[{item.Split('.').Last()}] --> B(({msg.Name.Split('.').Last()}))");
+                    clickbuilder.AppendLine($"click A{itemIdx} \"#{item.Replace(".", string.Empty).ToLower()}\"");
+
+                }
+
+                foreach ((var item, var itemIdx) in msg.SendMessages.Distinct().Select((x, i) => (x, i)))
+                {
+                    sb.AppendLine($"  B(({msg.Name.Split('.').Last()})) --> C{itemIdx}[{item.Split('.').Last()}]");
+                    clickbuilder.AppendLine($"click C{itemIdx} \"#{item.Replace(".", string.Empty).ToLower()}\"");
+                }
+
+                sb.AppendLine(clickbuilder.ToString());
+
+                sb.AppendLine("```");
+
+                if (msg.SendMessages.Any())
+                {
+                    sb.AppendLine($"- Send Messages");
+                }
+
+                foreach (var item in msg.SendMessages.Distinct())
+                {
+                    sb.AppendLine($"  - [{item}](#{item.Replace(".", string.Empty).ToLower()}) ({msg.SendMessages.Where(x => x.Equals(item)).Count()})");
+                }
+
+                if (msg.ReceiveMessages.Any())
+                {
+                    sb.AppendLine($"- Receive Messages");
+                }
+
+                foreach (var item in msg.ReceiveMessages.Distinct())
+                {
+                    sb.AppendLine($"  - [{item}](#{item.Replace(".", string.Empty).ToLower()}) ({msg.ReceiveMessages.Where(x => x.Equals(item)).Count()})");
                 }
 
                 sb.AppendLine();

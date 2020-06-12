@@ -31,9 +31,8 @@ namespace AkkaAnalyzer
             Console.WriteLine("Akka Messages");
             Console.WriteLine(akkaAnalyzerReporter.ReportMessages());
 
-            File.WriteAllText("Messages.md", akkaAnalyzerReporter.ReportMessages());
-            File.WriteAllText("Actors.md", akkaAnalyzerReporter.ReportActors());
-            
+            File.WriteAllText("Archtecture.md", akkaAnalyzerReporter.ReportArchtecture());
+
         }
     }
 }
