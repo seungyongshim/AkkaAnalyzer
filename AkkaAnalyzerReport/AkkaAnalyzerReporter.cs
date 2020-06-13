@@ -1,7 +1,10 @@
 ﻿using AkkaAnalyzer.Report.Entity;
+using LanguageExt;
+using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace AkkaAnalyzer.Report
 {
@@ -12,7 +15,7 @@ namespace AkkaAnalyzer.Report
 
         
 
-        public void AddMessageCaller(string caller, string msgName)
+        public void AddMessageCaller(string caller, string msgName, Location location = null)
         {
             if (_actorInfos.TryGetValue(caller, out var actorInfo))
             {
@@ -20,16 +23,16 @@ namespace AkkaAnalyzer.Report
             }
             else
             {
-                _actorInfos.Add(caller, new ActorInfo(caller, msgName, null));
+                _actorInfos.Add(caller, new ActorInfo(caller, (msgName, location), null));
             }
 
             if (_messageInfos.TryGetValue(msgName, out var akkaMessage))
             {
-                akkaMessage.Senders.Add(caller);
+                akkaMessage.Senders.Add((caller, location));
             }
             else
             {
-                _messageInfos.Add(msgName, new MessageInfo(msgName, caller, null));
+                _messageInfos.Add(msgName, new MessageInfo(msgName, (caller, location), null));
             }
         }
 
@@ -41,7 +44,7 @@ namespace AkkaAnalyzer.Report
             }
             else
             {
-                _actorInfos.Add(receiver, new ActorInfo(receiver, null, msgName));
+                _actorInfos.Add(receiver, new ActorInfo(receiver, default, msgName));
             }
 
             if (_messageInfos.TryGetValue(msgName, out var messageInfo))
@@ -50,79 +53,11 @@ namespace AkkaAnalyzer.Report
             }
             else
             {
-                _messageInfos.Add(msgName, new MessageInfo(msgName, null, receiver));
+                _messageInfos.Add(msgName, new MessageInfo(msgName, default, receiver));
             }
         }
 
-        public string ReportMessages()
-        {
-            StringBuilder sb = new StringBuilder();
-
-            foreach ((var msg, var i) in _messageInfos.Values.Select((x, i) => (x, i)))
-            {
-                sb.AppendLine($"## {msg.Name}");
-
-                if (msg.Senders.Count() > 0)
-                {
-                    sb.AppendLine($"- Sender");
-                }
-
-                foreach (var item in msg.Senders.Distinct())
-                {
-                    sb.AppendLine($"  - [{item}](../../Archtecture/Actors.md#{item.Replace(".", string.Empty).ToLower()}) ({msg.Senders.Where(x => x.Equals(item)).Count()})");
-                }
-
-                if (msg.Receivers.Count() > 0)
-                {
-                    sb.AppendLine($"- Receiver");
-                }
-
-                foreach (var item in msg.Receivers.Distinct())
-                {
-                    sb.AppendLine($"  - [{item}](../../Archtecture/Actors.md#{item.Replace(".", string.Empty).ToLower()}) ({msg.Receivers.Where(x => x.Equals(item)).Count()})");
-                }
-
-                sb.AppendLine();
-            }
-
-            return sb.ToString();
-        }
-
-        public string ReportActors()
-        {
-            StringBuilder sb = new StringBuilder();
-
-            foreach ((var msg, var i) in _actorInfos.Values.Select((x, i) => (x, i)))
-            {
-                sb.AppendLine($"## {msg.Name}");
-
-                if (msg.SendMessages.Count() > 0)
-                {
-                    sb.AppendLine($"- Send Messages");
-                }
-
-                foreach (var item in msg.SendMessages.Distinct())
-                {
-                    sb.AppendLine($"  - [{item}](../../Archtecture/Messages.md#{item.Replace(".", string.Empty).ToLower()}) ({msg.SendMessages.Where(x => x.Equals(item)).Count()})");
-                }
-
-                if (msg.ReceiveMessages.Count() > 0)
-                {
-                    sb.AppendLine($"- Receive Messages");
-                }
-
-                foreach (var item in msg.ReceiveMessages.Distinct())
-                {
-                    sb.AppendLine($"  - [{item}](../../Archtecture/Messages.md#{item.Replace(".", string.Empty).ToLower()}) ({msg.ReceiveMessages.Where(x => x.Equals(item)).Count()})");
-                }
-
-                sb.AppendLine();
-            }
-
-            return sb.ToString();
-        }
-
-        public string ReportArchtecture()
+        public async Task<string> ReportArchtecture()
         {
             StringBuilder sb = new StringBuilder();
 
@@ -139,7 +74,7 @@ namespace AkkaAnalyzer.Report
                 StringBuilder clickbuilder = new StringBuilder();
 
                 foreach ((var item, var itemIdx) in msg.Senders
-                    .Select(x => x.Split('.').Last())
+                    .Select(x => x.caller.Split('.').Last())
                     .Distinct().Select((x, i) => (x, i)))
                 {
                     sb.AppendLine($"  A{itemIdx}([{item}]) --- B[{msg.Name.Split('.').Last()}]");
@@ -165,9 +100,13 @@ namespace AkkaAnalyzer.Report
                     sb.AppendLine($"- Sender");
                 }
 
-                foreach (var item in msg.Senders.Distinct())
+                foreach (var item in msg.Senders.Distinct().Select(x => x.caller))
                 {
-                    sb.AppendLine($"  - [{item}](#{item.Replace(".", string.Empty).ToLower()}) ({msg.Senders.Where(x => x.Equals(item)).Count()})");
+                    sb.AppendLine($"  - [{item}](#{item.Replace(".", string.Empty).ToLower()}) ({msg.Senders.Where(x => x.caller.Equals(item)).Count()})");
+                    foreach (var loc in msg.Senders.Where( x => x.caller == item).Select(x => x.loc))
+                    {
+                        sb.AppendLine($"     - {await loc.GetLineSpan().AsTask().Select(x => x.Path + "#L" + x.StartLinePosition.Line)}");
+                    }
                 }
 
                 if (msg.Receivers.Any())
@@ -203,7 +142,7 @@ namespace AkkaAnalyzer.Report
 
                 }
 
-                foreach ((var item, var itemIdx) in msg.SendMessages.Distinct().Select((x, i) => (x, i)))
+                foreach ((var item, var itemIdx) in msg.SendMessages.Distinct().Select(x => x.sendMsg).Select((x, i) => (x, i)))
                 {
                     sb.AppendLine($"  B(({msg.Name.Split('.').Last()})) --> C{itemIdx}[{item.Split('.').Last()}]");
                     clickbuilder.AppendLine($"click C{itemIdx} \"#{item.Replace(".", string.Empty).ToLower()}\"");
@@ -218,9 +157,13 @@ namespace AkkaAnalyzer.Report
                     sb.AppendLine($"- Send Messages");
                 }
 
-                foreach (var item in msg.SendMessages.Distinct())
+                foreach (var item in msg.SendMessages.Select(x => x.sendMsg).Distinct())
                 {
                     sb.AppendLine($"  - [{item}](#{item.Replace(".", string.Empty).ToLower()}) ({msg.SendMessages.Where(x => x.Equals(item)).Count()})");
+                    foreach (var loc in msg.SendMessages.Where(x => x.sendMsg == item).Select(x => x.loc))
+                    {
+                        sb.AppendLine($"     - {await loc.GetLineSpan().AsTask().Select(x => x.Path + "#L" + x.StartLinePosition.Line)}");
+                    }
                 }
 
                 if (msg.ReceiveMessages.Any())

@@ -13,7 +13,7 @@ namespace AkkaAnalyzer
         static async Task Main(string[] args)
         {
             MSBuildLocator.RegisterDefaults();
-            DirectoryInfo directoryInfo = new DirectoryInfo(@"C:\Workspace\mls-application");
+            DirectoryInfo directoryInfo = new DirectoryInfo(@"C:\git2020\minesweeper\BoomFinder");
             var slnFiles = directoryInfo.GetFiles("*.sln", SearchOption.AllDirectories);
 
             var akkaAnalyzerReporter = new AkkaAnalyzerReporter();
@@ -29,9 +29,8 @@ namespace AkkaAnalyzer
             }
 
             Console.WriteLine("Akka Messages");
-            Console.WriteLine(akkaAnalyzerReporter.ReportMessages());
 
-            File.WriteAllText("Archtecture.md", akkaAnalyzerReporter.ReportArchtecture());
+            File.WriteAllText("Archtecture.md", await akkaAnalyzerReporter.ReportArchtecture());
 
         }
     }

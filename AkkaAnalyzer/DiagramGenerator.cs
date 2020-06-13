@@ -82,6 +82,7 @@ namespace AkkaAnalyzer
                 {
                     if (location.IsInSource)
                     {
+                        // .Tell을 기준으로 arguments 위치를 찾는다.
                         var node = location.SourceTree.GetRoot()
                                                       .FindToken(location.SourceSpan.Start)
                                                       .GetNextToken().Parent;
@@ -95,16 +96,16 @@ namespace AkkaAnalyzer
                             {
                                 case ISymbol x when x.Name.Equals(".ctor"):
                                     var msg = argumentsSymbols.Skip(1).First();
-                                    _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{msg.OriginalDefinition}");
+                                    _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{msg.OriginalDefinition}", location);
                                     break;
                                 case ILocalSymbol x:
-                                    _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{x.Type}");
+                                    _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{x.Type}", location);
                                     break;
                                 case IMethodSymbol x:
-                                    _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{x.ReturnType}");
+                                    _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{x.ReturnType}", location);
                                     break;
                                 case ISymbol x:
-                                    _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{x.OriginalDefinition}");
+                                    _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{x.OriginalDefinition}", location);
                                     break;
                                 }
                         }
