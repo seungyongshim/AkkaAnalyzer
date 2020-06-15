@@ -61,6 +61,21 @@ namespace AkkaAnalyzer.Report
         {
             StringBuilder sb = new StringBuilder();
 
+            sb.AppendLine("```mermaid");
+            sb.AppendLine("graph LR");
+            sb.AppendLine("linkStyle default interpolate basis");
+
+            foreach (var msg in _messageInfos.Values)
+            {
+                foreach (var actors in from sender in msg.Senders.Select(x => x.caller).Distinct()
+                                       from receiver in msg.Receivers.Distinct()
+                                       select (sender, receiver))
+                {
+                    sb.AppendLine($"  {actors.sender.GetHashCode()}([{actors.sender.Split('.').Last()}]) -- {msg.Name.Split('.').Last()} --> {actors.receiver.GetHashCode()}([{actors.receiver.Split('.').Last()}])");
+                }
+            }
+            sb.AppendLine("```");
+
             sb.AppendLine($"# 1. Messages");
 
             foreach ((var msg, var i) in _messageInfos.Values.Select((x, i) => (x, i)))
@@ -71,14 +86,11 @@ namespace AkkaAnalyzer.Report
                 sb.AppendLine("graph LR");
                 sb.AppendLine("linkStyle default interpolate basis");
 
-                StringBuilder clickbuilder = new StringBuilder();
-
                 foreach ((var item, var itemIdx) in msg.Senders
                     .Select(x => x.caller.Split('.').Last())
                     .Distinct().Select((x, i) => (x, i)))
                 {
                     sb.AppendLine($"  A{itemIdx}([{item}]) --- B[{msg.Name.Split('.').Last()}]");
-                    clickbuilder.AppendLine($"click A{itemIdx} \"#{item.Replace(".", string.Empty).ToLower()}\"");
 
                 }
 
@@ -87,10 +99,7 @@ namespace AkkaAnalyzer.Report
                     .Distinct().Select((x, i) => (x, i)))
                 {
                     sb.AppendLine($"  B[{msg.Name.Split('.').Last()}] --> C{itemIdx}([{item}])");
-                    clickbuilder.AppendLine($"click C{itemIdx} \"#{item.Replace(".", string.Empty).ToLower()}\"");
                 }
-
-                sb.AppendLine(clickbuilder.ToString());
 
                 sb.AppendLine("```");
 

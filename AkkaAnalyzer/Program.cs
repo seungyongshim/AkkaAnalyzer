@@ -13,7 +13,7 @@ namespace AkkaAnalyzer
         static async Task Main(string[] args)
         {
             MSBuildLocator.RegisterDefaults();
-            DirectoryInfo directoryInfo = new DirectoryInfo(@"C:\git2020\minesweeper\BoomFinder");
+            DirectoryInfo directoryInfo = new DirectoryInfo(@"C:\Workspace\mls-application");
             var slnFiles = directoryInfo.GetFiles("*.sln", SearchOption.AllDirectories);
 
             var akkaAnalyzerReporter = new AkkaAnalyzerReporter();
