@@ -61,9 +61,11 @@ namespace AkkaAnalyzer.Report
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine("```mermaid");
-            sb.AppendLine("graph LR");
-            sb.AppendLine("linkStyle default interpolate basis");
+
+            foreach (var actor in _actorInfos.Values)
+            {
+                sb.AppendLine($"{{id:{actor.Name.GetHashCode()}, name:'{actor.Name.Split('.').Last()}', label:'{actor.Name}', group: 'team' }},");
+            }
 
             foreach (var msg in _messageInfos.Values)
             {
@@ -71,10 +73,9 @@ namespace AkkaAnalyzer.Report
                                        from receiver in msg.Receivers.Distinct()
                                        select (sender, receiver))
                 {
-                    sb.AppendLine($"  {actors.sender.GetHashCode()}([{actors.sender.Split('.').Last()}]) -- {msg.Name.Split('.').Last()} --> {actors.receiver.GetHashCode()}([{actors.receiver.Split('.').Last()}])");
+                    sb.AppendLine($"{{source:{actors.sender.GetHashCode()}, target:{actors.receiver.GetHashCode()}, type:'{msg.Name.Split('.').Last()}' }},");
                 }
             }
-            sb.AppendLine("```");
 
             sb.AppendLine($"# 1. Messages");
 
