@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace AkkaAnalyzer
 {
-    internal class DiagramGenerator
+    public class DiagramGenerator
     {
         private readonly Solution _solution;
 
@@ -44,6 +44,7 @@ namespace AkkaAnalyzer
         }
 
         public AkkaAnalyzerReporter _akkaAnalyzerReporter { get; }
+        public IEnumerable<string> IgnoreProjects { get; set; }
 
         private async Task ProcessCompilation(Compilation compilation)
         {

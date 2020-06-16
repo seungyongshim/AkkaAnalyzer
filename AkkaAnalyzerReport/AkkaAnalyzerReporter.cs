@@ -1,6 +1,7 @@
 ﻿using AkkaAnalyzer.Report.Entity;
 using LanguageExt;
 using Microsoft.CodeAnalysis;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,6 +18,7 @@ namespace AkkaAnalyzer.Report
 
         public void AddMessageCaller(string caller, string msgName, Location location = null)
         {
+            Console.WriteLine($"- {caller}: {msgName}");
             if (_actorInfos.TryGetValue(caller, out var actorInfo))
             {
                 actorInfo.ReceiveMessages.Add(msgName);
