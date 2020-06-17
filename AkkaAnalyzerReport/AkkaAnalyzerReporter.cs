@@ -14,8 +14,6 @@ namespace AkkaAnalyzer.Report
         Dictionary<string, ActorInfo> _actorInfos = new Dictionary<string, ActorInfo>();
         Dictionary<string, MessageInfo> _messageInfos = new Dictionary<string, MessageInfo>();
 
-        
-
         public void AddMessageCaller(string caller, string msgName, Location location = null)
         {
             Console.WriteLine($"- {caller}: {msgName}");
@@ -190,7 +188,7 @@ namespace AkkaAnalyzer.Report
                 sb.AppendLine();
             }
 
-            return sb.ToString();
+            return sb.ToString().Replace("\r", string.Empty);
         }
     }
 }
