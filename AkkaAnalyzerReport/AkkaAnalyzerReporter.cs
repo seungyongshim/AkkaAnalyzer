@@ -1,16 +1,18 @@
-﻿using AkkaAnalyzer.Report.Entity;
-using LanguageExt;
-using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AkkaAnalyzer.Report.Entity;
+using LanguageExt;
+using Microsoft.CodeAnalysis;
 
 namespace AkkaAnalyzer.Report
 {
     public class AkkaAnalyzerReporter
     {
+
+
         Dictionary<string, ActorInfo> _actorInfos = new Dictionary<string, ActorInfo>();
         Dictionary<string, MessageInfo> _messageInfos = new Dictionary<string, MessageInfo>();
 
@@ -112,7 +114,7 @@ namespace AkkaAnalyzer.Report
                 foreach (var item in msg.Senders.Distinct().Select(x => x.caller))
                 {
                     sb.AppendLine($"  - [{item}](#{item.Replace(".", string.Empty).ToLower()}) ({msg.Senders.Where(x => x.caller.Equals(item)).Count()})");
-                    foreach (var loc in msg.Senders.Where( x => x.caller == item).Select(x => x.loc))
+                    foreach (var loc in msg.Senders.Where(x => x.caller == item).Select(x => x.loc))
                     {
                         sb.AppendLine($"     - {await loc.GetLineSpan().AsTask().Select(x => x.Path + "#L" + x.StartLinePosition.Line)}");
                     }
