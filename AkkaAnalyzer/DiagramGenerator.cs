@@ -36,6 +36,9 @@ namespace AkkaAnalyzer
         {
             _solution = workspace.OpenSolutionAsync(solutionPath).Result;
 
+
+
+
         }
 
         public DiagramGenerator(string solutionPath, MSBuildWorkspace workspace, AkkaAnalyzerReporter akkaAnalyzerReporter) : this(solutionPath, workspace)
@@ -92,7 +95,7 @@ namespace AkkaAnalyzer
                             var argumentsSymbols = node.GetAllSymbols(compilation)
                                                        .ToArray();
 
-                            
+
                             switch (argumentsSymbols.First())
                             {
                                 case ISymbol x when x.Name.Equals(".ctor"):
@@ -108,7 +111,7 @@ namespace AkkaAnalyzer
                                 case ISymbol x:
                                     _akkaAnalyzerReporter.AddMessageCaller($"{caller.CallingSymbol.ContainingType}", $"{x.OriginalDefinition}", location);
                                     break;
-                                }
+                            }
                         }
                         catch
                         {
