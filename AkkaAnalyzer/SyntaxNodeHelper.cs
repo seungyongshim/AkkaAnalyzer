@@ -1,8 +1,8 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace AkkaAnalyzer
 {
@@ -11,7 +11,7 @@ namespace AkkaAnalyzer
         public static ISymbol GetSymbols(this SyntaxNode root, Compilation compilation)
         {
             var model = compilation.GetSemanticModel(root.SyntaxTree);
-            ISymbol symbol = model.GetSymbolInfo(root).Symbol;
+            var symbol = model.GetSymbolInfo(root).Symbol;
             return symbol;
         }
 
@@ -30,35 +30,30 @@ namespace AkkaAnalyzer
                     case SyntaxKind.InvocationExpression:
                         break;
                     default:
-                        ISymbol symbol = model.GetSymbolInfo(node).Symbol;
+                        var symbol = model.GetSymbolInfo(node).Symbol;
 
                         if (symbol != null)
                         {
                             if (noDuplicates.Add(symbol))
+                            {
                                 yield return symbol;
+                            }
                         }
                         break;
                 }
             }
         }
 
-        public static IEnumerable<SyntaxToken> HasRecieveCallee(this BaseMethodDeclarationSyntax method)
-        {
-            return method.DescendantTokens()
+        public static IEnumerable<SyntaxToken> HasRecieveCallee(this BaseMethodDeclarationSyntax method) => method.DescendantTokens()
                          .Where(x => x.IsKind(SyntaxKind.IdentifierToken))
                          .Where(x => "Receive".Equals(x.ValueText));
 
-        }
-
-        public static bool IsReceiveActor(this ClassDeclarationSyntax @class)
-        {
-            return @class.BaseList?.Types
+        public static bool IsReceiveActor(this ClassDeclarationSyntax @class) => @class?.BaseList?.Types
                                     .OfType<SimpleBaseTypeSyntax>()
                                     .Select(x => x.Type as IdentifierNameSyntax)
                                     .Where(x => x != null)
                                     .Where(x => "ReceiveActor".Equals(x.Identifier.ValueText))
                                     .Count() > 0;
-        }
 
         public static string Fullname(this ClassDeclarationSyntax @class)
         {

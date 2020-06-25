@@ -7,7 +7,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AkkaAnalyzer", "AkkaAnalyze
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AkkaAnalyzer.Report", "AkkaAnalyzerReport\AkkaAnalyzer.Report.csproj", "{A08B18EC-7786-4BB7-941D-B6353EDC2DA9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AkkaAnalyzer.CLI", "AkkaAnalyzer.CLI\AkkaAnalyzer.CLI.csproj", "{D72B0088-511D-468F-BBB4-8E2138DB4C7B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AkkaAnalyzer.CLI", "AkkaAnalyzer.CLI\AkkaAnalyzer.CLI.csproj", "{D72B0088-511D-468F-BBB4-8E2138DB4C7B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{82C8A406-986D-4F48-B375-C93BAD3C5964}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

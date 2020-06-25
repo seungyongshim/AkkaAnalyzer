@@ -1,9 +1,9 @@
-﻿using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
 
 namespace AkkaAnalyzer.Report.Entity
 {
-    class MessageInfo
+    internal class MessageInfo
     {
         public MessageInfo(string name, (string, Location) sender, string receiver)
         {

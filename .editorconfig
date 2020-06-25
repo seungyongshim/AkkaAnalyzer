@@ -73,10 +73,10 @@ indent_style = tab
 [*.{cs,csx,cake,vb,vbx}]
 # "this." and "Me." qualifiers
 # https://docs.microsoft.com/visualstudio/ide/editorconfig-language-conventions#this-and-me
-dotnet_style_qualification_for_field = true:warning
-dotnet_style_qualification_for_property = true:warning
-dotnet_style_qualification_for_method = true:warning
-dotnet_style_qualification_for_event = true:warning
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_event = false:warning
 # Language keywords instead of framework type names for type references
 # https://docs.microsoft.com/visualstudio/ide/editorconfig-language-conventions#language-keywords
 dotnet_style_predefined_type_for_locals_parameters_members = true:warning
@@ -155,7 +155,7 @@ csharp_style_conditional_delegate_call = true:warning
 csharp_prefer_braces = true:warning
 # Unused value preferences
 # https://docs.microsoft.com/visualstudio/ide/editorconfig-language-conventions#unused-value-preferences
-csharp_style_unused_value_expression_statement_preference = discard_variable:suggestion
+csharp_style_unused_value_expression_statement_preference = discard_variable:silent
 csharp_style_unused_value_assignment_preference = discard_variable:suggestion
 # Index and range preferences
 # https://docs.microsoft.com/visualstudio/ide/editorconfig-language-conventions#index-and-range-preferences

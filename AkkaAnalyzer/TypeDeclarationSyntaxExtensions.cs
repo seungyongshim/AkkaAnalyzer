@@ -1,21 +1,23 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace AkkaAnalyzer
 {
     public static class TypeDeclarationSyntaxExtensions
     {
-        const char NESTED_CLASS_DELIMITER = '+';
-        const char NAMESPACE_CLASS_DELIMITER = '.';
-        const char TYPEPARAMETER_CLASS_DELIMITER = '`';
+        private const char NESTED_CLASS_DELIMITER = '+';
+        private const char NAMESPACE_CLASS_DELIMITER = '.';
+        private const char TYPEPARAMETER_CLASS_DELIMITER = '`';
 
         public static string GetFullName(this TypeDeclarationSyntax source)
         {
             if (source is null)
+            {
                 throw new ArgumentNullException(nameof(source));
+            }
 
             var namespaces = new LinkedList<NamespaceDeclarationSyntax>();
             var types = new LinkedList<TypeDeclarationSyntax>();
@@ -47,13 +49,15 @@ namespace AkkaAnalyzer
             return result.ToString();
         }
 
-        static void AppendName(StringBuilder builder, TypeDeclarationSyntax type)
+        private static void AppendName(StringBuilder builder, TypeDeclarationSyntax type)
         {
             builder.Append(type.Identifier.Text);
             var typeArguments = type.TypeParameterList?.ChildNodes()
                 .Count(node => node is TypeParameterSyntax) ?? 0;
             if (typeArguments != 0)
+            {
                 builder.Append(TYPEPARAMETER_CLASS_DELIMITER).Append(typeArguments);
+            }
         }
     }
 }

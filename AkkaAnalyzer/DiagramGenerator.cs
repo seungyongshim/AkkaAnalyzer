@@ -1,14 +1,13 @@
-﻿using AkkaAnalyzer.Report;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using AkkaAnalyzer.Report;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.MSBuild;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace AkkaAnalyzer
 {
@@ -25,26 +24,16 @@ namespace AkkaAnalyzer
         public async Task ProcessSolution()
         {
 
-            foreach (Project project in _solution.Projects)
+            foreach (var project in _solution.Projects)
             {
-                Compilation compilation = await project.GetCompilationAsync();
+                var compilation = await project.GetCompilationAsync();
                 await ProcessCompilation(compilation);
             }
         }
 
-        public DiagramGenerator(string solutionPath, MSBuildWorkspace workspace)
-        {
-            _solution = workspace.OpenSolutionAsync(solutionPath).Result;
+        public DiagramGenerator(string solutionPath, MSBuildWorkspace workspace) => _solution = workspace.OpenSolutionAsync(solutionPath).Result;
 
-
-
-
-        }
-
-        public DiagramGenerator(string solutionPath, MSBuildWorkspace workspace, AkkaAnalyzerReporter akkaAnalyzerReporter) : this(solutionPath, workspace)
-        {
-            _akkaAnalyzerReporter = akkaAnalyzerReporter;
-        }
+        public DiagramGenerator(string solutionPath, MSBuildWorkspace workspace, AkkaAnalyzerReporter akkaAnalyzerReporter) : this(solutionPath, workspace) => _akkaAnalyzerReporter = akkaAnalyzerReporter;
 
         public AkkaAnalyzerReporter _akkaAnalyzerReporter { get; }
         public IEnumerable<string> IgnoreProjects { get; set; }
@@ -58,7 +47,7 @@ namespace AkkaAnalyzer
             {
                 var root = await tree.GetRootAsync();
                 var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
-                SyntaxTree treeCopy = tree;
+                var treeCopy = tree;
                 foreach (var @class in classes)
                 {
                     if (@class.IsReceiveActor())
@@ -76,7 +65,10 @@ namespace AkkaAnalyzer
         {
             var symbolTell = compilation.FindSymbol(x => x.Name.Equals("Tell"));
 
-            if (symbolTell is null) return;
+            if (symbolTell is null)
+            {
+                return;
+            }
 
             var callerTells = await SymbolFinder.FindCallersAsync(symbolTell, _solution);
 

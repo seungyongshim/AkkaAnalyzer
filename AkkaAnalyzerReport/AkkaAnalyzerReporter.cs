@@ -11,10 +11,8 @@ namespace AkkaAnalyzer.Report
 {
     public class AkkaAnalyzerReporter
     {
-
-
-        Dictionary<string, ActorInfo> _actorInfos = new Dictionary<string, ActorInfo>();
-        Dictionary<string, MessageInfo> _messageInfos = new Dictionary<string, MessageInfo>();
+        private readonly Dictionary<string, ActorInfo> _actorInfos = new Dictionary<string, ActorInfo>();
+        private readonly Dictionary<string, MessageInfo> _messageInfos = new Dictionary<string, MessageInfo>();
 
         public void AddMessageCaller(string caller, string msgName, Location location = null)
         {
@@ -61,7 +59,7 @@ namespace AkkaAnalyzer.Report
 
         public async Task<string> ReportArchtecture()
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             sb.AppendLine("```mermaid");
             sb.AppendLine("graph LR");
@@ -144,7 +142,7 @@ namespace AkkaAnalyzer.Report
                 sb.AppendLine("graph LR");
                 sb.AppendLine("linkStyle default interpolate basis");
 
-                StringBuilder clickbuilder = new StringBuilder();
+                var clickbuilder = new StringBuilder();
 
                 foreach ((var item, var itemIdx) in msg.ReceiveMessages.Distinct().Select((x, i) => (x, i)))
                 {
