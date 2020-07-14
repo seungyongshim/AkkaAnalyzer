@@ -49,7 +49,8 @@ namespace AkkaAnalyzer
                 await diagramGenerator.ProcessSolution().ConfigureAwait(false);
             }
 
-            File.WriteAllText("Archtecture.md", await akkaAnalyzerReporter.ReportArchtecture().ConfigureAwait(false));
+            //File.WriteAllText("Archtecture.md", await akkaAnalyzerReporter.ReportArchtecture().ConfigureAwait(false));
+            File.WriteAllText("Archtecture.md", await akkaAnalyzerReporter.ReportCSV().ConfigureAwait(false));
 
         }
     }

@@ -2,7 +2,7 @@
   "profiles": {
     "AkkaAnalyzer.CLI": {
       "commandName": "Project",
-      "commandLineArgs": "-r \"C:\\Workspace\\iris_review\" -f \"Carrier_N, DBLoader11g_N\""
+      "commandLineArgs": "-r \"C:\\Workspace\\mls-application\" -f \"Carrier_N, DBLoader11g_N\""
     }
   }
 }

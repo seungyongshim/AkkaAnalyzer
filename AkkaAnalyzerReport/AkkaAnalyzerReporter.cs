@@ -57,6 +57,61 @@ namespace AkkaAnalyzer.Report
             }
         }
 
+        public async Task<string> ReportCSV()
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine("# width: auto")
+              .AppendLine("# height: auto")
+              .AppendLine("# padding: 40")
+              .AppendLine("# layout: horizontalflow")
+              .AppendLine("# label: %fullname%")
+              .AppendLine("# nodespacing: 60")
+              .AppendLine("# levelspacing: 60")
+              .AppendLine("# edgespacing: 60")
+              .AppendLine("# stylename: shape")
+              .AppendLine(@"# connect: {""from"":""ref"", ""to"":""id"", ""style"":""curved = 0;endArrow = blockThin;endFill = 1;""}")
+              .AppendLine(@"# styles: {""actor"": ""rounded=1;fillColor=#fff2cc;strokeColor=#d6b656"", ")
+              .AppendLine(@"#         ""message"": ""rounded=0;fillColor=#f8cecc;strokeColor=#b85450"" }");
+
+            sb.AppendLine("id,fullname,shape,ref,ref_count");
+
+            // Actor List
+            foreach (var item in _actorInfos.Values)
+            {
+                
+
+                sb.Append($"{item.Name.GetHashCode()}")
+                  .Append(",")
+                  .Append($"{item.Name}")
+                  .Append(",")
+                  .Append($"actor")
+                  .Append(",")
+                  .Append($"\"{string.Join(",", item.SendMessages.Select(x => x.sendMsg.GetHashCode().ToString()))}\"")
+                  .Append(",")
+                  .Append($"{item.SendMessages.Count}")
+                  .AppendLine();
+            }
+
+            // Message List
+            foreach (var item in _messageInfos.Values)
+            {
+                sb.Append($"{item.Name.GetHashCode()}")
+                  .Append(",")
+                  .Append($"{item.Name}")
+                  .Append(",")
+                  .Append($"message")
+                  .Append(",")
+                  .Append($"\"{string.Join(",", item.Receivers.Select(x => x.GetHashCode().ToString()))}\"")
+                  .Append(",")
+                  .Append($"{item.Receivers.Count}")
+                  .AppendLine();
+            }
+
+            return sb.ToString();
+
+        }
+
         public async Task<string> ReportArchtecture()
         {
             var sb = new StringBuilder();
